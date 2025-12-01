@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: emsx-backend
+    env: docker
+    plan: free
+    region: oregon
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
