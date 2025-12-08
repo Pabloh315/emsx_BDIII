@@ -6,7 +6,7 @@ import com.app.emsx.dtos.auth.AuthenticationResponse;
 import com.app.emsx.dtos.auth.RegisterRequest;
 import com.app.emsx.entities.User;
 import com.app.emsx.repositories.UserRepository;
-import com.app.emsx.serviceimpls.AuthServiceImpl;
+import com.app.emsx.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*") // ✅ Permitir peticiones desde el frontend (localhost:3000)
 public class AuthController {
 
-    private final AuthServiceImpl authService;
+    private final AuthService authService;
     private final UserRepository userRepository;
 
     /**

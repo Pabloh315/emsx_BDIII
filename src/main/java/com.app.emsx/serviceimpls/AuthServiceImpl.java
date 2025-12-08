@@ -7,6 +7,7 @@ import com.app.emsx.dtos.auth.RegisterRequest;
 import com.app.emsx.entities.User;
 import com.app.emsx.repositories.UserRepository;
 import com.app.emsx.security.JwtService;
+import com.app.emsx.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -115,6 +116,48 @@ public class AuthServiceImpl {
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
                 .role(user.getRole())
+                .build();
+    }
+
+    /**
+     * ✅ Crear usuario administrador por defecto
+     */
+    @Override
+    public AuthenticationResponse createAdminUser() {
+        // Verificar si ya existe un admin
+        if (userRepository.findByEmail("admin@emsx.com").isPresent()) {
+            User existingAdmin = userRepository.findByEmail("admin@emsx.com").get();
+            String jwtToken = jwtService.generateToken(existingAdmin);
+            return AuthenticationResponse.builder()
+                    .token(jwtToken)
+                    .userId(existingAdmin.getId())
+                    .email(existingAdmin.getEmail())
+                    .firstname(existingAdmin.getFirstname())
+                    .lastname(existingAdmin.getLastname())
+                    .role(existingAdmin.getRole())
+                    .build();
+        }
+
+        // Crear nuevo admin
+        User admin = User.builder()
+                .firstname("Admin")
+                .lastname("System")
+                .email("admin@emsx.com")
+                .password(passwordEncoder.encode("admin123"))
+                .role("ROLE_ADMIN")
+                .build();
+
+        userRepository.save(admin);
+
+        String jwtToken = jwtService.generateToken(admin);
+
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .userId(admin.getId())
+                .email(admin.getEmail())
+                .firstname(admin.getFirstname())
+                .lastname(admin.getLastname())
+                .role(admin.getRole())
                 .build();
     }
 }

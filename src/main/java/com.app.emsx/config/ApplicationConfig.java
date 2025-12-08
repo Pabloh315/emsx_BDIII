@@ -1,6 +1,6 @@
-package com.app.emsx.security;
+package com.app.emsx.config;
 
-import com.app.emsx.repositories.UserRepository;
+import com.app.emsx.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,16 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class ApplicationConfig {
 
-    private final UserRepository userRepository;
-
-    /**
-     * ✅ Carga de usuario personalizada
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("❌ Usuario no encontrado: " + username));
-    }
+    private final CustomUserDetailsService customUserDetailsService;
 
     /**
      * ✅ Proveedor de autenticación (DAO)
@@ -40,7 +31,7 @@ public class ApplicationConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setUserDetailsService(customUserDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
