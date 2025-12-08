@@ -1,6 +1,5 @@
 package com.app.emsx.security;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -16,85 +15,72 @@ import java.util.function.Function;
 /**
  * JwtService
  * -----------------------------------------------------
- * ✔ Genera y valida tokens JWT
- * ✔ Carga la clave desde .env o variables del sistema
- * ✔ Extrae claims, usuario y expiración
+ * ✔ Carga JWT_SECRET desde variables de entorno o application.properties
+ * ✔ Acepta claves Base64 y claves normales
+ * ✔ No falla si el Base64 es inválido
+ * ✔ Compatible con Render, Docker y entornos productivos
  */
 @Service
 public class JwtService {
 
-    private final Dotenv dotenv = Dotenv.configure()
-            .ignoreIfMissing() // Evita excepción si .env no existe
-            .load();
-
     @Value("${jwt.secret}")
-    private String defaultJwtSecret;
+    private String secretValue; // viene de JWT_SECRET (desde variables de entorno en Render)
 
     private Key key;
 
     /**
-     * ✅ Inicializa la clave al iniciar el servicio (producción segura)
+     * Inicializa la clave al iniciar la aplicación.
+     * No lanza errores si la clave no es Base64.
      */
     @PostConstruct
     public void initKey() {
-        String secret = null;
 
-        // 1️⃣ Intentar leer desde .env
+        if (secretValue == null || secretValue.isBlank()) {
+            throw new IllegalStateException("❌ JWT_SECRET no está configurado en Render o application.properties");
+        }
+
+        String secret = secretValue.trim();
+
         try {
-            secret = dotenv.get("JWT_SECRET");
-        } catch (Exception ignored) {
-        }
-
-        // 2️⃣ Intentar leer desde variable de entorno
-        if (secret == null || secret.isBlank()) {
-            secret = System.getenv("JWT_SECRET");
-        }
-
-        // 3️⃣ Fallback a application.properties
-        if (secret == null || secret.isBlank()) {
-            secret = defaultJwtSecret;
-        }
-
-        // 4️⃣ Si aún no se encuentra, lanzar error controlado
-        if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("❌ No se encontró JWT_SECRET ni en .env, ni en variables del sistema, ni en application.properties");
-        }
-
-        // 5️⃣ Validar tamaño mínimo (256 bits = 32 bytes codificados Base64)
-        // Para el fallback default, permitir claves más cortas (solo para desarrollo)
-        try {
-            byte[] keyBytes = Decoders.BASE64.decode(secret.trim());
-            if (keyBytes.length < 32 && !secret.equals(defaultJwtSecret)) {
-                throw new IllegalStateException("❌ La clave JWT_SECRET es demasiado corta. Debe ser ≥ 256 bits (usa openssl rand -base64 64)");
+            // Intentar decodificar como Base64
+            byte[] decodedKey = Decoders.BASE64.decode(secret);
+            if (decodedKey.length >= 32) {
+                this.key = Keys.hmacShaKeyFor(decodedKey);
+                System.out.println("🔐 JWT_SECRET cargado como Base64 (" + decodedKey.length * 8 + " bits)");
+                return;
             }
-            this.key = Keys.hmacShaKeyFor(keyBytes);
-            System.out.println("🔑 JWT_SECRET cargada correctamente (" + keyBytes.length * 8 + " bits)");
-        } catch (IllegalArgumentException e) {
-            // Si no es Base64 válido, usar directamente como string (para desarrollo)
-            this.key = Keys.hmacShaKeyFor(secret.getBytes());
-            System.out.println("🔑 JWT_SECRET cargada desde application.properties (modo desarrollo)");
+        } catch (Exception ignored) {
+            // No es Base64 → intentar como texto normal
         }
+
+        // Si no es Base64, usar la clave como texto plano (válido también)
+        if (secret.length() < 32) {
+            System.out.println("⚠ Advertencia: JWT_SECRET es corto. Debe tener ≥ 32 caracteres para HS512.");
+        }
+
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        System.out.println("🔐 JWT_SECRET cargado como texto plano (" + secret.length() + " chars)");
     }
 
     private Key getSignInKey() {
         if (key == null) {
-            initKey(); // fallback si no fue inicializado
+            initKey();
         }
         return key;
     }
 
-    // ✅ Extrae el username (subject)
+    // EXTRAER USERNAME
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // ✅ Extrae un claim genérico
+    // EXTRAER CLAIM
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // ✅ Parse completo del token
+    // PARSEAR TOKEN COMPLETO
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
@@ -103,26 +89,28 @@ public class JwtService {
                 .getBody();
     }
 
-    // ✅ Genera token con claims extra y roles
+    // GENERAR JWT
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", userDetails.getAuthorities());
-
-
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 10 horas
+                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 horas
                 .signWith(getSignInKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 
-    // ✅ Valida token
+    // VALIDAR TOKEN
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        try {
+            final String username = extractUsername(token);
+            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
