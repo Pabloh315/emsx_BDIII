@@ -221,13 +221,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Crear nuevo admin
-        User admin = User.builder()
-                .firstname("Admin")
-                .lastname("System")
-                .username("admin")
-                .email("admin@emsx.com")
-                .password("admin123") // ⚠️ Texto plano - SOLO DESARROLLO
-                .build();
+        User admin = new User();
+        admin.setFirstname("Admin");
+        admin.setLastname("System");
+        admin.setUsername("admin");
+        admin.setEmail("admin@emsx.com");
+        admin.setPassword("admin123"); // ⚠️ Texto plano - SOLO DESARROLLO
 
         userRepository.save(admin);
 
