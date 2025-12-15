@@ -31,10 +31,10 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = true) // Temporalmente nullable para permitir migración de datos existentes
     private String firstname;
 
-    @Column(nullable = false)
+    @Column(nullable = true) // Temporalmente nullable para permitir migración de datos existentes
     private String lastname;
 
     @Column(nullable = false, unique = true)

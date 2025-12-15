@@ -133,9 +133,9 @@ public class AuthServiceImpl implements AuthService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(user.getId())
-                .email(user.getEmail())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
+                .email(user.getEmail() != null ? user.getEmail() : "")
+                .firstname(user.getFirstname() != null ? user.getFirstname() : "Usuario")
+                .lastname(user.getLastname() != null ? user.getLastname() : "Sin Apellido")
                 .role(role)
                 .build();
     }
@@ -144,22 +144,27 @@ public class AuthServiceImpl implements AuthService {
      * ✅ Autenticar usuario existente y retornar formato esperado por frontend
      */
     public LoginResponseData authenticateForLogin(AuthenticationRequest request) {
-        AuthenticationResponse authResponse = authenticate(request);
-        
-        // Obtener usuario con roles cargados
-        User userWithRoles = userRepository.findWithRolesByUsernameOrEmail(request.getUsername(), request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
-        LoginResponseData.UserInfo userInfo = LoginResponseData.UserInfo.builder()
-                .id(userWithRoles.getId())
-                .username(userWithRoles.getUsername())
-                .email(userWithRoles.getEmail())
-                .build();
-        
-        return LoginResponseData.builder()
-                .user(userInfo)
-                .token(authResponse.getToken())
-                .build();
+        try {
+            AuthenticationResponse authResponse = authenticate(request);
+            
+            // Obtener usuario con roles cargados
+            User userWithRoles = userRepository.findWithRolesByUsernameOrEmail(request.getUsername(), request.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            LoginResponseData.UserInfo userInfo = LoginResponseData.UserInfo.builder()
+                    .id(userWithRoles.getId())
+                    .username(userWithRoles.getUsername() != null ? userWithRoles.getUsername() : "")
+                    .email(userWithRoles.getEmail() != null ? userWithRoles.getEmail() : "")
+                    .build();
+            
+            return LoginResponseData.builder()
+                    .user(userInfo)
+                    .token(authResponse.getToken())
+                    .build();
+        } catch (Exception e) {
+            log.error("❌ Error en authenticateForLogin: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
@@ -188,9 +193,9 @@ public class AuthServiceImpl implements AuthService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(user.getId())
-                .email(user.getEmail())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
+                .email(user.getEmail() != null ? user.getEmail() : "")
+                .firstname(user.getFirstname() != null ? user.getFirstname() : "Usuario")
+                .lastname(user.getLastname() != null ? user.getLastname() : "Sin Apellido")
                 .role(role)
                 .build();
     }
