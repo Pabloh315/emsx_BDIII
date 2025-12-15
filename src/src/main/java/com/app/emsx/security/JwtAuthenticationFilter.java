@@ -48,28 +48,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 🧾 Extraer el token JWT (sin la palabra "Bearer ")
-        jwt = authHeader.substring(7);
+        try {
+            // 🧾 Extraer el token JWT (sin la palabra "Bearer ")
+            jwt = authHeader.substring(7);
 
-        // 👤 Extraer usuario desde el token
-        username = jwtService.extractUsername(jwt);
+            // 👤 Extraer usuario desde el token
+            username = jwtService.extractUsername(jwt);
 
-        // 🔐 Validar token si aún no hay autenticación en contexto
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            // 🔐 Validar token si aún no hay autenticación en contexto
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // ✅ Validar correctamente con el objeto UserDetails
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                // ✅ Validar correctamente con el objeto UserDetails
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            // Si el token es inválido o expirado, continuar sin autenticación
+            // El SecurityContext permanecerá sin autenticación y Spring Security rechazará la petición
+            // si es necesario
         }
 
         // 🚀 Continuar con la cadena de filtros

@@ -15,21 +15,22 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Orígenes permitidos
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000", // frontend React (Vite)
-                "http://localhost:9090", // Vite dev server alternativo
-                "http://127.0.0.1:3000"
-        ));
+        // ✅ Permitir todas las origenes (necesario para app móvil React Native)
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOrigins(List.of("*"));
 
         // ✅ Métodos permitidos
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         // ✅ Headers permitidos
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
 
-        // ✅ Permitir credenciales (si usás cookies o headers con token)
+        // ✅ Permitir credenciales
         config.setAllowCredentials(true);
+
+        // ✅ Cache preflight por 1 hora
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

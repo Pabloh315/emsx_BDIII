@@ -29,6 +29,11 @@ public class RegisterRequest {
     private String lastname;
 
     /**
+     * Nombre de usuario único
+     */
+    private String username;
+
+    /**
      * Correo electrónico único del usuario
      */
     private String email;

@@ -38,9 +38,7 @@ public class SecurityConfig {
                 // ✅ Definir rutas públicas y protegidas
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos (login y registro)
-                        .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                        // ⚠️ Permitir temporalmente todos los endpoints (modo desarrollo)
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Cualquier otra ruta requiere autenticación
                         .anyRequest().authenticated()
                 )

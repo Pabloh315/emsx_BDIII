@@ -19,4 +19,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Busca un usuario por su email (para login)
      */
     Optional<User> findByEmail(String email);
+
+    /**
+     * Busca un usuario por su username (para login)
+     */
+    Optional<User> findByUsername(String username);
+
+    /**
+     * Busca un usuario por username o email
+     */
+    Optional<User> findByUsernameOrEmail(String username, String email);
 }

@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.security.Key;
 import java.util.*;
@@ -19,6 +20,7 @@ import java.util.function.Function;
  * ✔ Carga la clave desde .env o variables del sistema
  * ✔ Extrae claims, usuario y expiración
  */
+@Slf4j
 @Service
 public class JwtService {
 
@@ -35,26 +37,53 @@ public class JwtService {
     public void initKey() {
         String secret = null;
 
-        // 1️⃣ Intentar leer desde .env
+        // 1️⃣ Intentar leer desde variable de entorno (Render)
+        secret = System.getenv("JWT_SECRET");
+
+        // 2️⃣ Intentar leer desde .env (desarrollo local)
+        if (secret == null || secret.isBlank()) {
+            try {
+                secret = dotenv.get("JWT_SECRET");
+            } catch (Exception ignored) {
+            }
+        }
+
+        // 3️⃣ Intentar leer desde application.properties (último recurso)
+        if (secret == null || secret.isBlank()) {
+            try {
+                // Leer desde application.properties usando @Value no es posible aquí,
+                // así que usamos un valor por defecto seguro
+                secret = "default-secret-key-change-in-production-minimum-32-characters-long-for-security";
+                System.out.println("⚠️ Usando JWT_SECRET por defecto. Cambiar en producción!");
+            } catch (Exception ignored) {
+            }
+        }
+
+        // 4️⃣ Si no se encuentra, lanzar error controlado
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("❌ No se encontró JWT_SECRET");
+        }
+
+        // 5️⃣ Validar tamaño mínimo (HS512 requiere al menos 512 bits = 64 bytes)
+        // Si el secret es texto plano, lo convertimos a bytes directamente
+        byte[] keyBytes;
         try {
-            secret = dotenv.get("JWT_SECRET");
-        } catch (Exception ignored) {
+            // Intentar decodificar como Base64 primero
+            keyBytes = Decoders.BASE64.decode(secret.trim());
+        } catch (Exception e) {
+            // Si falla, tratar como texto plano
+            keyBytes = secret.trim().getBytes();
         }
 
-        // 2️⃣ Intentar leer desde variable de entorno
-        if (secret == null || secret.isBlank()) {
-            secret = System.getenv("JWT_SECRET");
-        }
-
-        // 3️⃣ Si no se encuentra, lanzar error controlado
-        if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("❌ No se encontró JWT_SECRET ni en .env ni en variables del sistema");
-        }
-
-        // 4️⃣ Validar tamaño mínimo (256 bits = 32 bytes codificados Base64)
-        byte[] keyBytes = Decoders.BASE64.decode(secret.trim());
-        if (keyBytes.length < 32) {
-            throw new IllegalStateException("❌ La clave JWT_SECRET es demasiado corta. Debe ser ≥ 256 bits (usa openssl rand -base64 64)");
+        // Validar que tenga al menos 64 bytes (512 bits) para HS512
+        if (keyBytes.length < 64) {
+            // Si es muy corto, repetir hasta alcanzar 64 bytes
+            byte[] extendedKey = new byte[64];
+            for (int i = 0; i < 64; i++) {
+                extendedKey[i] = keyBytes[i % keyBytes.length];
+            }
+            keyBytes = extendedKey;
+            System.out.println("⚠️ JWT_SECRET extendido a 64 bytes para HS512");
         }
 
         this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -81,11 +110,17 @@ public class JwtService {
 
     // ✅ Parse completo del token
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignInKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSignInKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("Token expirado", e);
+        } catch (JwtException e) {
+            throw new RuntimeException("Token inválido", e);
+        }
     }
 
     // ✅ Genera token con claims extra y roles

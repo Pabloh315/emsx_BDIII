@@ -36,6 +36,9 @@ public class User implements UserDetails {
     private String lastname;
 
     @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -45,6 +48,7 @@ public class User implements UserDetails {
      * Rol del usuario (ejemplo: ROLE_ADMIN o ROLE_USER)
      */
     @Column(nullable = false)
+    @Builder.Default
     private String role = "ROLE_USER";
 
     /**
@@ -57,11 +61,11 @@ public class User implements UserDetails {
     }
 
     /**
-     * ✅ El username para Spring Security será el email
+     * ✅ El username para Spring Security será el campo username
      */
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     /**
