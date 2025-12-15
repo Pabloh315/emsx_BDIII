@@ -7,7 +7,7 @@ import com.app.emsx.dtos.auth.LoginResponseData;
 import com.app.emsx.dtos.auth.RegisterRequest;
 import com.app.emsx.entities.User;
 import com.app.emsx.repositories.UserRepository;
-import com.app.emsx.servicesimpls.AuthServiceImpl;
+import com.app.emsx.serviceimpls.AuthServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
