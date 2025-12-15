@@ -85,9 +85,9 @@ public class AuthServiceImpl implements AuthService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(user.getId())
-                .email(user.getEmail())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
+                .email(user.getEmail() != null ? user.getEmail() : "")
+                .firstname(user.getFirstname() != null ? user.getFirstname() : "Usuario")
+                .lastname(user.getLastname() != null ? user.getLastname() : "Sin Apellido")
                 .role(role)
                 .build();
     }
@@ -218,9 +218,9 @@ public class AuthServiceImpl implements AuthService {
             return AuthenticationResponse.builder()
                     .token(jwtToken)
                     .userId(existingAdmin.getId())
-                    .email(existingAdmin.getEmail())
-                    .firstname(existingAdmin.getFirstname())
-                    .lastname(existingAdmin.getLastname())
+                    .email(existingAdmin.getEmail() != null ? existingAdmin.getEmail() : "")
+                    .firstname(existingAdmin.getFirstname() != null ? existingAdmin.getFirstname() : "Admin")
+                    .lastname(existingAdmin.getLastname() != null ? existingAdmin.getLastname() : "System")
                     .role(role)
                     .build();
         }
@@ -241,9 +241,9 @@ public class AuthServiceImpl implements AuthService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(admin.getId())
-                .email(admin.getEmail())
-                .firstname(admin.getFirstname())
-                .lastname(admin.getLastname())
+                .email(admin.getEmail() != null ? admin.getEmail() : "")
+                .firstname(admin.getFirstname() != null ? admin.getFirstname() : "Admin")
+                .lastname(admin.getLastname() != null ? admin.getLastname() : "System")
                 .role("ROLE_ADMIN")
                 .build();
     }

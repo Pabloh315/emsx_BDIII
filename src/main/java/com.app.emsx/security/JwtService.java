@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.*;
 import java.util.function.Function;
+import java.util.Arrays;
 
 /**
  * JwtService
@@ -30,7 +31,7 @@ public class JwtService {
 
     /**
      * Inicializa la clave al iniciar la aplicación.
-     * No lanza errores si la clave no es Base64.
+     * Asegura que la clave tenga al menos 64 bytes (512 bits) para HS512.
      */
     @PostConstruct
     public void initKey() {
@@ -40,26 +41,63 @@ public class JwtService {
         }
 
         String secret = secretValue.trim();
+        byte[] keyBytes;
 
         try {
             // Intentar decodificar como Base64
             byte[] decodedKey = Decoders.BASE64.decode(secret);
-            if (decodedKey.length >= 32) {
-                this.key = Keys.hmacShaKeyFor(decodedKey);
+            
+            // HS512 requiere al menos 64 bytes (512 bits)
+            if (decodedKey.length >= 64) {
+                keyBytes = decodedKey;
                 System.out.println("🔐 JWT_SECRET cargado como Base64 (" + decodedKey.length * 8 + " bits)");
-                return;
+            } else {
+                // Extender la clave a 64 bytes si es más corta
+                keyBytes = extendKeyTo64Bytes(decodedKey);
+                System.out.println("⚠️ JWT_SECRET Base64 extendido de " + decodedKey.length * 8 + " bits a 512 bits");
             }
+            
+            this.key = Keys.hmacShaKeyFor(keyBytes);
+            return;
+            
         } catch (Exception ignored) {
-            // No es Base64 → intentar como texto normal
+            // No es Base64 → usar como texto plano
         }
 
-        // Si no es Base64, usar la clave como texto plano (válido también)
-        if (secret.length() < 32) {
-            System.out.println("⚠ Advertencia: JWT_SECRET es corto. Debe tener ≥ 32 caracteres para HS512.");
+        // Si no es Base64, usar la clave como texto plano
+        byte[] textBytes = secret.getBytes();
+        
+        // HS512 requiere al menos 64 bytes (512 bits)
+        if (textBytes.length >= 64) {
+            keyBytes = textBytes;
+            System.out.println("🔐 JWT_SECRET cargado como texto plano (" + textBytes.length * 8 + " bits)");
+        } else {
+            // Extender la clave a 64 bytes si es más corta
+            keyBytes = extendKeyTo64Bytes(textBytes);
+            System.out.println("⚠️ JWT_SECRET texto plano extendido de " + textBytes.length * 8 + " bits a 512 bits");
         }
 
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
-        System.out.println("🔐 JWT_SECRET cargado como texto plano (" + secret.length() + " chars)");
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    /**
+     * Extiende una clave a exactamente 64 bytes (512 bits) para HS512.
+     * Repite la clave y la trunca/pad si es necesario.
+     */
+    private byte[] extendKeyTo64Bytes(byte[] originalKey) {
+        byte[] extendedKey = new byte[64]; // 64 bytes = 512 bits
+        
+        if (originalKey.length == 0) {
+            // Si la clave está vacía, usar un valor por defecto
+            Arrays.fill(extendedKey, (byte) 0x42);
+        } else {
+            // Repetir la clave hasta llenar 64 bytes
+            for (int i = 0; i < 64; i++) {
+                extendedKey[i] = originalKey[i % originalKey.length];
+            }
+        }
+        
+        return extendedKey;
     }
 
     private Key getSignInKey() {
