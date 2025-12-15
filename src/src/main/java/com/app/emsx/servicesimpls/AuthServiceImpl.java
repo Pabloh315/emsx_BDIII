@@ -66,13 +66,19 @@ public class AuthServiceImpl {
 
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("ROLE_USER"); // Rol por defecto
+        // ⚠️ NO hashear contraseña - SOLO DESARROLLO (NoOpPasswordEncoder)
+        user.setPassword(request.getPassword());
 
         userRepository.save(user);
         log.info("✅ Usuario registrado exitosamente: {} (ID: {})", user.getUsername(), user.getId());
 
         String jwtToken = jwtService.generateToken(user);
+        
+        // Obtener el primer rol del usuario (si existe)
+        String role = user.getAuthorities().stream()
+                .findFirst()
+                .map(auth -> auth.getAuthority())
+                .orElse("ROLE_USER");
 
         return AuthenticationResponse.builder()
                 .token(jwtToken)
@@ -80,7 +86,7 @@ public class AuthServiceImpl {
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
-                .role(user.getRole())
+                .role(role)
                 .build();
     }
 
@@ -90,8 +96,8 @@ public class AuthServiceImpl {
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         log.info("🔐 Intentando autenticar usuario: {}", request.getUsername());
         
-        // Buscar usuario por username o email
-        User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
+        // Buscar usuario por username o email con roles cargados
+        User user = userRepository.findWithRolesByUsernameOrEmail(request.getUsername(), request.getUsername())
                 .orElseThrow(() -> {
                     log.error("❌ Usuario no encontrado: {}", request.getUsername());
                     return new RuntimeException("Usuario no encontrado");
@@ -115,6 +121,12 @@ public class AuthServiceImpl {
 
         String jwtToken = jwtService.generateToken(user);
         log.info("✅ Token JWT generado para usuario: {}", user.getUsername());
+        
+        // Obtener el primer rol del usuario (si existe)
+        String role = user.getAuthorities().stream()
+                .findFirst()
+                .map(auth -> auth.getAuthority())
+                .orElse("ROLE_USER");
 
         return AuthenticationResponse.builder()
                 .token(jwtToken)
@@ -122,7 +134,7 @@ public class AuthServiceImpl {
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
-                .role(user.getRole())
+                .role(role)
                 .build();
     }
     
@@ -132,7 +144,8 @@ public class AuthServiceImpl {
     public LoginResponseData authenticateForLogin(AuthenticationRequest request) {
         AuthenticationResponse authResponse = authenticate(request);
         
-        User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
+        // Obtener usuario con roles cargados
+        User user = userRepository.findWithRolesByUsernameOrEmail(request.getUsername(), request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         LoginResponseData.UserInfo userInfo = LoginResponseData.UserInfo.builder()

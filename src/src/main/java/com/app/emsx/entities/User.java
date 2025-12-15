@@ -8,6 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * User Entity
@@ -17,7 +19,7 @@ import java.util.List;
  * ✔ Incluye rol (ROLE_ADMIN o ROLE_USER)
  */
 @Entity
-@Table(name = "users")
+@Table(name = "usuarios")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -47,17 +49,24 @@ public class User implements UserDetails {
     /**
      * Rol del usuario (ejemplo: ROLE_ADMIN o ROLE_USER)
      */
-    @Column(nullable = false)
-    @Builder.Default
-    private String role = "ROLE_USER";
+    /**
+     * Relación many-to-many con roles a través de usuario_rol
+     */
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Set<UsuarioRol> usuarioRoles;
 
     /**
-     * ✅ Devuelve la lista de roles del usuario
+     * ✅ Devuelve la lista de roles del usuario desde usuario_rol
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Devuelve siempre una autoridad, para evitar problemas si el campo está vacío
-        return List.of(new SimpleGrantedAuthority(role != null ? role : "ROLE_USER"));
+        if (usuarioRoles != null && !usuarioRoles.isEmpty()) {
+            return usuarioRoles.stream()
+                    .map(ur -> new SimpleGrantedAuthority("ROLE_" + ur.getRol().getNombre()))
+                    .collect(Collectors.toList());
+        }
+        // Fallback si no hay roles asignados
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     /**

@@ -9,7 +9,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
@@ -26,11 +26,11 @@ public class ApplicationConfig {
     private final UserRepository userRepository;
 
     /**
-     * ✅ Carga de usuario personalizada
+     * ✅ Carga de usuario personalizada con roles desde usuario_rol
      */
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsernameOrEmail(username, username)
+        return username -> userRepository.findWithRolesByUsernameOrEmail(username, username)
                 .orElseThrow(() -> new RuntimeException("❌ Usuario no encontrado: " + username));
     }
 
@@ -46,11 +46,12 @@ public class ApplicationConfig {
     }
 
     /**
-     * ✅ Codificador de contraseñas (BCrypt)
+     * ✅ Codificador de contraseñas (NoOp - SOLO DESARROLLO)
+     * ⚠️ NO usar en producción - contraseñas en texto plano
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance();
     }
 
     /**
