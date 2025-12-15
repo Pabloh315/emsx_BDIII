@@ -1,14 +1,24 @@
 package com.app.emsx.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * SecurityConfig
+ * -----------------------------------------------------
+ * ✔ Configura Spring Security con JWT
+ * ✔ Deshabilita CSRF (porque usamos token)
+ * ✔ Aplica CORS global desde CorsConfig
+ * ✔ Protege rutas excepto /api/auth/**
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -17,24 +27,28 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-    @org.springframework.context.annotation.Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
+                // ✅ Habilitar CORS global (configurado en CorsConfig)
+                .cors(cors -> cors.configure(http))
+                // ❌ Desactivar CSRF (no se usa con JWT)
+                .csrf(AbstractHttpConfigurer::disable)
+                // ✅ Definir rutas públicas y protegidas
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/register",  // PERMITIR REGISTRO
-                                "/api/auth/login",     // PERMITIR LOGIN
-                                "/actuator/health",    // PARA VERIFICAR
-                                "/error",              // PARA ERRORES
-                                "/swagger-ui/**",       // SWAGGER UI
-                                "/v3/api-docs/**"      // SWAGGER DOCS
-                        ).permitAll()
+                        // Endpoints públicos (login y registro)
+                        .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health", "/error").permitAll()
+                        // Cualquier otra ruta requiere autenticación
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // ✅ Política de sesión sin estado
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                // ✅ Registrar el AuthenticationProvider
                 .authenticationProvider(authenticationProvider)
+                // ✅ Registrar el filtro JWT antes del UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
