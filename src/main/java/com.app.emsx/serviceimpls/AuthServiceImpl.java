@@ -227,6 +227,7 @@ public class AuthServiceImpl implements AuthService {
         admin.setUsername("admin");
         admin.setEmail("admin@emsx.com");
         admin.setPassword("admin123"); // ⚠️ Texto plano - SOLO DESARROLLO
+        admin.setUsuarioRoles(null); // Se asignarán roles después si es necesario
 
         userRepository.save(admin);
 

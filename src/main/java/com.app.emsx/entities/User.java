@@ -50,7 +50,8 @@ public class User implements UserDetails {
      * Relación many-to-many con roles a través de usuario_rol
      */
     @OneToMany(mappedBy = "usuario", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    private Set<UsuarioRol> usuarioRoles;
+    @Builder.Default
+    private Set<UsuarioRol> usuarioRoles = null;
 
     /**
      * ✅ Devuelve la lista de roles del usuario desde usuario_rol
