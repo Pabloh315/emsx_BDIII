@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor(exclude = {"password"}) // ✅ Excluir password del constructor para forzar uso de setter
-@Builder
+// ✅ NO usar @Builder ni @AllArgsConstructor - se usa new User() + setters para forzar cifrado de password
 public class User implements UserDetails {
 
     @Id
@@ -79,7 +78,6 @@ public class User implements UserDetails {
      * Relación many-to-many con roles a través de usuario_rol
      */
     @OneToMany(mappedBy = "usuario", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @Builder.Default
     private Set<UsuarioRol> usuarioRoles = null;
 
     /**
