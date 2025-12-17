@@ -19,3 +19,5 @@ public class UsuarioRolId implements Serializable {
     private Long rolId;
 }
 
+
+

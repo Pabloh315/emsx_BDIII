@@ -12,7 +12,6 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // ✅ Permitir acceso desde el frontend (localhost:3000)
 public class DashboardController {
 
     private final EmployeeRepository employeeRepository;

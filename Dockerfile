@@ -28,9 +28,9 @@ WORKDIR /app
 # Copiar solo el JAR generado en la etapa anterior
 COPY --from=build /app/target/*.jar app.jar
 
-# Puerto por defecto (Render usa PORT, pero exponemos 8080)
-ENV PORT=8080
-EXPOSE 8080
+# Puerto dinámico asignado por Render
+# Render inyecta la variable PORT automáticamente
+EXPOSE $PORT
 
-# Comando de inicio
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Comando de inicio - Pasa PORT dinámicamente a Spring Boot
+ENTRYPOINT ["sh", "-c", "java -jar -Dserver.port=$PORT app.jar"]

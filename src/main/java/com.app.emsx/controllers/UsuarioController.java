@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class UsuarioController {
 
     private final UserRepository userRepository;
@@ -55,4 +54,6 @@ public class UsuarioController {
         }
     }
 }
+
+
 

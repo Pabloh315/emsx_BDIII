@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/facturas")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class FacturaController {
 
     private final FacturaRepository facturaRepository;
@@ -94,4 +93,6 @@ public class FacturaController {
         }
     }
 }
+
+
 

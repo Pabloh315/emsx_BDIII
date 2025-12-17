@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/clientes")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class ClienteController {
 
     private final ClienteRepository clienteRepository;
@@ -94,4 +93,6 @@ public class ClienteController {
         }
     }
 }
+
+
 

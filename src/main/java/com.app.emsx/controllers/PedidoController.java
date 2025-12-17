@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/pedidos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class PedidoController {
 
     private final PedidoRepository pedidoRepository;
@@ -94,4 +93,6 @@ public class PedidoController {
         }
     }
 }
+
+
 

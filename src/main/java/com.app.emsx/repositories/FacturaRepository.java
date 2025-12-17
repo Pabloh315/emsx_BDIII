@@ -17,3 +17,5 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     Optional<Factura> findById(Long id);
 }
 
+
+

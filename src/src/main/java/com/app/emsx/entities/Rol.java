@@ -26,3 +26,5 @@ public class Rol {
     private String nombre; // ADMIN, VENDEDOR, etc.
 }
 
+
+

@@ -15,3 +15,5 @@ public interface UsuarioRolRepository extends JpaRepository<UsuarioRol, UsuarioR
     List<UsuarioRol> findByUsuarioId(@Param("usuarioId") Long usuarioId);
 }
 
+
+
