@@ -17,3 +17,4 @@ public interface UsuarioRolRepository extends JpaRepository<UsuarioRol, UsuarioR
 
 
 
+

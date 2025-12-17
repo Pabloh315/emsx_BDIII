@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(exclude = {"password"}) // ✅ Excluir password del constructor para forzar uso de setter
 @Builder
 public class User implements UserDetails {
 
@@ -43,8 +43,37 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Setter(AccessLevel.NONE) // ✅ Deshabilitar setter automático de Lombok - usar setter personalizado
     @Column(nullable = false)
     private String password;
+
+    /**
+     * ✅ Setter protegido para password
+     * Valida que el password esté cifrado (formato BCrypt: $2a$10$...)
+     * Si se intenta setear un password en texto plano, lanza excepción
+     * 
+     * NOTA: Este setter NO debe usarse directamente.
+     * Usar passwordEncoder.encode() en el servicio antes de llamar setPassword()
+     */
+    public void setPassword(String password) {
+        // Permitir null solo durante construcción inicial
+        if (password == null) {
+            this.password = null;
+            return;
+        }
+        
+        // Validar que el password esté cifrado (formato BCrypt)
+        // BCrypt siempre empieza con $2a$, $2b$ o $2y$ seguido de $ y luego el salt
+        if (!password.startsWith("$2a$") && !password.startsWith("$2b$") && !password.startsWith("$2y$")) {
+            throw new IllegalArgumentException(
+                "❌ SEGURIDAD: El password debe estar cifrado con BCrypt antes de asignarse. " +
+                "Use passwordEncoder.encode() en el servicio. " +
+                "Password recibido no tiene formato BCrypt válido."
+            );
+        }
+        
+        this.password = password;
+    }
 
     /**
      * Relación many-to-many con roles a través de usuario_rol

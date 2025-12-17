@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
  * ✔ Gestiona registro y autenticación de usuarios
  * ✔ Genera tokens JWT válidos con roles incluidos
  * ✔ Retorna la respuesta de autenticación al frontend
- * ⚠️ SOLO DESARROLLO - NoOpPasswordEncoder (contraseñas en texto plano)
+ * ✔ Usa BCryptPasswordEncoder para cifrado seguro de contraseñas
  */
 @Slf4j
 @Service
@@ -68,11 +68,17 @@ public class AuthServiceImpl implements AuthService {
 
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        // ⚠️ NO hashear contraseña - SOLO DESARROLLO (NoOpPasswordEncoder)
-        user.setPassword(request.getPassword());
+        
+        // ✅ Cifrar contraseña con BCrypt antes de guardar
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        log.debug("🔐 Password cifrado para usuario {}: {}...", request.getUsername(), 
+                  encodedPassword.substring(0, Math.min(20, encodedPassword.length())));
+        user.setPassword(encodedPassword);
 
         userRepository.save(user);
         log.info("✅ Usuario registrado exitosamente: {} (ID: {})", user.getUsername(), user.getId());
+        log.debug("🔐 Password guardado en BD (verificar formato BCrypt): {}...", 
+                  user.getPassword().substring(0, Math.min(20, user.getPassword().length())));
 
         String jwtToken = jwtService.generateToken(user);
         
@@ -231,7 +237,11 @@ public class AuthServiceImpl implements AuthService {
         admin.setLastname("System");
         admin.setUsername("admin");
         admin.setEmail("admin@emsx.com");
-        admin.setPassword("admin123"); // ⚠️ Texto plano - SOLO DESARROLLO
+        // ✅ Cifrar contraseña con BCrypt antes de guardar
+        String encodedAdminPassword = passwordEncoder.encode("admin123");
+        log.debug("🔐 Password cifrado para admin: {}...", 
+                  encodedAdminPassword.substring(0, Math.min(20, encodedAdminPassword.length())));
+        admin.setPassword(encodedAdminPassword);
         admin.setUsuarioRoles(null); // Se asignarán roles después si es necesario
 
         userRepository.save(admin);
